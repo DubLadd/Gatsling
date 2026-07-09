@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GATSLING v13.2 | OMNIVERSE HOLOGRAPHIC ARCHITECT</title>
+    <title>GATSLING v14.0 | OMNIVERSE HOLOGRAPHIC ARCHITECT</title>
     <style>
         :root {
             --bg: #010103;
@@ -179,7 +179,7 @@
 
     <div id="ui-layer">
         <header id="main-header">
-            <div class="engine-id">GATSLING // ASTROPHYSICS v13.2</div>
+            <div class="engine-id">GATSLING // ASTROPHYSICS v14.0</div>
             <div style="display: flex; align-items: center; gap: 15px;">
                 <button class="btn" style="margin-bottom:0; border-color: var(--accent-gold); color: var(--accent-gold); font-size: 0.6rem; padding: 6px 12px;" onclick="enterCinematic()">✨ CINEMATIC MODE</button>
                 <div style="font-size: 0.65rem; color: var(--accent-green);">STATUS: TRUE SIMULATION</div>
@@ -196,7 +196,9 @@
                         <option value="sun">Yellow Dwarf (Class G)</option>
                         <option value="red_dwarf">Red Dwarf (Class M)</option>
                         <option value="blue_giant">Blue Giant (Class O)</option>
+                        <option value="red_giant">Red Giant (Evolved)</option>
                         <option value="white_dwarf">White Dwarf (Remnant)</option>
+                        <option value="wolf_rayet">Wolf-Rayet (Extreme)</option>
                         <option value="neutron_star">Neutron Star</option>
                         <option value="pulsar">Pulsar (Emit Beams)</option>
                         <option value="blackhole">Singularity (Black Hole)</option>
@@ -208,7 +210,10 @@
                         <button class="btn" onclick="startPlacement('planet')">🪐 Planet</button>
                         <button class="btn" onclick="startPlacement('moon')">🌙 Moon</button>
                     </div>
-                    <button class="btn" style="border-color: var(--accent-green); color: var(--accent-green);" onclick="startPlacement('asteroid')">☄ Asteroid</button>
+                    <div class="btn-group-row">
+                        <button class="btn" style="border-color: var(--accent-green); color: var(--accent-green);" onclick="startPlacement('asteroid')">☄ Asteroid</button>
+                        <button class="btn" style="border-color: #ff8800; color: #ff8800;" onclick="startPlacement('comet')">☠ Comet</button>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -225,6 +230,8 @@
                     
                     <div class="card-label" style="margin-top:6px;">COSMIC ZOOM: <span id="zoom-scale-val">1.0x</span></div>
                     <input type="range" id="zoom-slider" min="0.1" max="5" step="0.1" value="1" oninput="updateZoomSlider(this.value)">
+                    
+                    <button class="btn" id="lensing-btn" onclick="toggleLensing()" style="margin-top:6px; border-color:#cc88ff; color:#cc88ff;">GRAVITATIONAL LENSING: OFF</button>
                 </div>
 
                 <div class="card">
@@ -280,10 +287,17 @@
                     <div class="mass-chart" id="mass-chart"></div>
                 </div>
                 
+                <div class="card">
+                    <div class="card-label">SYSTEM RADIATION</div>
+                    <div id="radiation-meter" style="height: 12px; background: rgba(0,0,0,0.5); border-radius: 2px; overflow: hidden; border: 1px solid rgba(255,100,100,0.3);"><div id="radiation-fill" style="height: 100%; background: linear-gradient(90deg, #00ff00, #ffff00, #ff5500, #ff0000); width: 0%; transition: width 0.3s;"></div></div>
+                    <div style="font-size: 0.5rem; color: #888; margin-top: 4px;" id="radiation-text">NOMINAL</div>
+                </div>
+                
                 <div class="card" style="margin-top: auto;">
                     <div class="card-label">PRESETS</div>
                     <button class="btn" onclick="loadPreset('solar')">Solar System (Moons)</button>
                     <button class="btn" onclick="loadPreset('pulsar')">Pulsar & Blue Giant</button>
+                    <button class="btn" onclick="loadPreset('triple')">Triple Star System</button>
                     <button class="btn danger" style="margin-top:6px;" onclick="loadPreset('empty')">VACUUM PURGE</button>
                 </div>
             </aside>
@@ -323,6 +337,7 @@
         let showHZ = false;
         let isPaused = false;
         let timeDirection = 1;
+        let showLensing = false;
         let cam = { x: 0, y: 0, zoom: 1, targetZoom: 1, focus: null };
 
         let activePlacementMode = null;
@@ -388,6 +403,29 @@
             const btn = document.getElementById('hz-btn');
             btn.classList.toggle('active', showHZ);
             btn.innerText = `HABITABLE ZONE: ${showHZ ? 'ON' : 'OFF'}`;
+        }
+
+        function toggleLensing() {
+            showLensing = !showLensing;
+            const btn = document.getElementById('lensing-btn');
+            btn.classList.toggle('active', showLensing);
+            btn.innerText = `GRAVITATIONAL LENSING: ${showLensing ? 'ON' : 'OFF'}`;
+        }
+
+        // Radiation calculation
+        function calculateSystemRadiation() {
+            let totalRadiation = 0;
+            bodies.forEach(b => {
+                if (b.type === 'sun') {
+                    let radLevel = 1;
+                    if (b.starClass === 'blue_giant') radLevel = 4;
+                    else if (b.starClass === 'wolf_rayet') radLevel = 6;
+                    else if (b.starClass === 'red_giant') radLevel = 2.5;
+                    else if (b.starClass === 'red_dwarf') radLevel = 0.2;
+                    totalRadiation += radLevel;
+                }
+            });
+            return Math.min(100, totalRadiation * 12);
         }
 
         function updateTimeSlider(val) {
@@ -457,8 +495,12 @@
                     name = `Proxima-${bodies.length}`; mass = 4000; radius = 22; color = '#ff4444'; type = 'sun'; sClass = 'red_dwarf'; break;
                 case 'blue_giant':
                     name = `Rigel-${bodies.length}`; mass = 38000; radius = 80; color = '#66aaff'; type = 'sun'; sClass = 'blue_giant'; break;
+                case 'red_giant':
+                    name = `Aldebaran-${bodies.length}`; mass = 32000; radius = 95; color = '#ff7722'; type = 'sun'; sClass = 'red_giant'; break;
                 case 'white_dwarf':
                     name = `Sirius-B-${bodies.length}`; mass = 11000; radius = 15; color = '#ffffff'; type = 'sun'; sClass = 'white_dwarf'; break;
+                case 'wolf_rayet':
+                    name = `WR-${bodies.length}`; mass = 45000; radius = 25; color = '#aaffff'; type = 'sun'; sClass = 'wolf_rayet'; break;
                 case 'neutron_star':
                     name = `Magnetar-${bodies.length}`; mass = 28000; radius = 8; color = '#aaddff'; type = 'sun'; sClass = 'neutron_star'; break;
                 case 'pulsar':
@@ -471,6 +513,8 @@
                     name = `Moon-${bodies.length}`; mass = 2; radius = 3; color = '#aaaaaa'; type = 'moon'; break;
                 case 'asteroid':
                     name = `Debris-${bodies.length}`; mass = 0.5; radius = 1.5; color = '#888888'; type = 'moon'; break;
+                case 'comet':
+                    name = `Comet-${bodies.length}`; mass = 1.2; radius = 2; color = '#ffffcc'; type = 'moon'; break;
             }
 
             const orbit = getStableOrbitVelocity(x, y);
@@ -532,6 +576,19 @@
             commsChannel.style.color = color;
             commsChannel.style.borderColor = color;
             document.getElementById('ai-persona-select').style.color = color;
+        }
+
+        // Update radiation display
+        function updateRadiationMeter() {
+            const radLevel = calculateSystemRadiation();
+            const meter = document.getElementById('radiation-fill');
+            const text = document.getElementById('radiation-text');
+            if (meter) meter.style.width = radLevel + '%';
+            let status = 'NOMINAL';
+            if (radLevel > 75) status = 'CRITICAL';
+            else if (radLevel > 50) status = 'ELEVATED';
+            else if (radLevel > 25) status = 'CAUTION';
+            if (text) text.innerText = status;
         }
 
         // Autonomous Comms Loop
@@ -920,9 +977,18 @@ If logs are relevant, connect them to this body. Maintain your persona's tone.`;
                     ctx.lineWidth = 2; ctx.strokeStyle = dColor; ctx.stroke();
                 } else if (this.type === 'sun') {
                     const grad = ctx.createRadialGradient(0,0, r*0.15, 0,0, r);
+                    let edgeColor = '#ff2200';
+                    if (this.starClass === 'blue_giant') edgeColor = '#0022ff';
+                    else if (this.starClass === 'red_dwarf') edgeColor = '#880000';
+                    else if (this.starClass === 'red_giant') edgeColor = '#cc4400';
+                    else if (this.starClass === 'wolf_rayet') edgeColor = '#00aaff';
                     grad.addColorStop(0, '#fff'); grad.addColorStop(0.75, this.color); 
-                    grad.addColorStop(1, this.starClass === 'blue_giant' ? '#0022ff' : (this.starClass === 'red_dwarf' ? '#880000' : '#ff2200'));
-                    ctx.shadowBlur = (this.starClass === 'blue_giant' ? 80 : 50) * cam.zoom; ctx.shadowColor = this.color;
+                    grad.addColorStop(1, edgeColor);
+                    let shadowMult = 50;
+                    if (this.starClass === 'blue_giant') shadowMult = 80;
+                    else if (this.starClass === 'wolf_rayet') shadowMult = 100;
+                    else if (this.starClass === 'red_giant') shadowMult = 75;
+                    ctx.shadowBlur = shadowMult * cam.zoom; ctx.shadowColor = this.color;
                     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
 
                     if (this.starClass === 'pulsar') {
@@ -963,10 +1029,20 @@ If logs are relevant, connect them to this body. Maintain your persona's tone.`;
                     const v = Math.sqrt(globalG*64000/d);
                     debris.push({ x: Math.cos(a)*d, y: Math.sin(a)*d, vx: -Math.sin(a)*v, vy: Math.cos(a)*v, size: 1.5 });
                 }
+            } else if (p === 'triple') {
+                bodies.push(new Body("Primary-A", -100, 0, 0, 2.5, 28000, 50, "#ffaaaa", "sun", "red_giant"));
+                bodies.push(new Body("Primary-B", 100, 0, 0, -2.5, 22000, 42, "#ffcc66", "sun", "sun"));
+                bodies.push(new Body("Tertiary-C", 0, 140, -3, 0, 18000, 38, "#66aaff", "sun", "blue_giant"));
+                for(let i=0; i<8; i++) {
+                    const d = 200 + i*80; const a = Math.random()*Math.PI*2;
+                    const v = Math.sqrt(globalG*68000/d);
+                    bodies.push(new Body(`OrbitWorld-${i}`, Math.cos(a)*d, Math.sin(a)*d, -Math.sin(a)*v, Math.cos(a)*v, 30+Math.random()*100, 8, '#00ddff', 'planet'));
+                }
             }
         }
 
         function updateUI() {
+            updateRadiationMeter();
             miniCtx.clearRect(0, 0, 200, 150);
             miniCtx.fillStyle = 'rgba(0, 204, 255, 0.08)'; miniCtx.fillRect(100 - 1, 75 - 1, 2, 2); 
             
@@ -1002,6 +1078,8 @@ If logs are relevant, connect them to this body. Maintain your persona's tone.`;
                         let lumMult = 1;
                         if (core.starClass === 'blue_giant') lumMult = 3;
                         if (core.starClass === 'red_dwarf') lumMult = 0.3;
+                        if (core.starClass === 'red_giant') lumMult = 2.8;
+                        if (core.starClass === 'wolf_rayet') lumMult = 5;
                         const tempK = Math.round((450 * lumMult) / Math.sqrt(dist / 160));
                         tempValue = `${tempK} K (${(tempK - 273).toFixed(0)}°C)`;
                     } else tempValue = "15 K (Vacuum)";
@@ -1032,6 +1110,8 @@ If logs are relevant, connect them to this body. Maintain your persona's tone.`;
                         let outer = Math.sqrt(b.mass) * 2.5;
                         if (b.starClass === 'blue_giant') { inner *= 1.5; outer *= 1.5; }
                         if (b.starClass === 'red_dwarf') { inner *= 0.6; outer *= 0.6; }
+                        if (b.starClass === 'red_giant') { inner *= 2.2; outer *= 2.2; }
+                        if (b.starClass === 'wolf_rayet') { inner *= 0.5; outer *= 0.8; }
                         if (b.starClass === 'white_dwarf' || b.starClass === 'neutron_star' || b.starClass === 'pulsar') { inner *= 0.3; outer *= 0.3; }
 
                         const sx = (b.x - cam.x) * cam.zoom + width/2;
@@ -1084,6 +1164,44 @@ If logs are relevant, connect them to this body. Maintain your persona's tone.`;
                 const sx = (d.x - cam.x)*cam.zoom + width/2; const sy = (d.y - cam.y)*cam.zoom + height/2;
                 if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) {
                     ctx.fillStyle = "rgba(0, 204, 255, 0.45)"; ctx.fillRect(sx, sy, d.size * cam.zoom, d.size * cam.zoom);
+                }
+            });
+
+            // Gravitational lensing effect
+            if (showLensing) {
+                bodies.forEach(b => {
+                    if ((b.type === 'blackhole' || b.type === 'sun') && b.mass > 20000) {
+                        const sx = (b.x - cam.x) * cam.zoom + width/2;
+                        const sy = (b.y - cam.y) * cam.zoom + height/2;
+                        const lensRadius = Math.sqrt(b.mass / 500) * cam.zoom;
+                        const lensGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, lensRadius);
+                        lensGrad.addColorStop(0, 'rgba(200, 100, 255, 0.08)');
+                        lensGrad.addColorStop(0.7, 'rgba(100, 200, 255, 0.03)');
+                        lensGrad.addColorStop(1, 'transparent');
+                        ctx.fillStyle = lensGrad;
+                        ctx.beginPath(); ctx.arc(sx, sy, lensRadius, 0, Math.PI*2); ctx.fill();
+                    }
+                });
+            }
+
+            // Accretion disks around black holes
+            bodies.forEach(b => {
+                if (b.type === 'blackhole') {
+                    const sx = (b.x - cam.x) * cam.zoom + width/2;
+                    const sy = (b.y - cam.y) * cam.zoom + height/2;
+                    const r = b.radius * cam.zoom;
+                    for (let ring = 3; ring > 0; ring--) {
+                        const ringR = r * (2 + ring);
+                        const ringGrad = ctx.createRadialGradient(sx, sy, ringR*0.8, sx, sy, ringR*1.2);
+                        ringGrad.addColorStop(0, `rgba(255, 100, 50, ${0.15/ring})`);
+                        ringGrad.addColorStop(0.5, `rgba(255, 150, 100, ${0.25/ring})`);
+                        ringGrad.addColorStop(1, `rgba(255, 200, 100, ${0.1/ring})`);
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, ringR, 0, Math.PI*2);
+                        ctx.strokeStyle = ringGrad;
+                        ctx.lineWidth = ringR * 0.3;
+                        ctx.stroke();
+                    }
                 }
             });
 
