@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GATSLING v13.2 | OMNIVERSE HOLOGRAPHIC ARCHITECT</title>
+    <style>
+        :root {
+            --bg: #010103;
+            --panel: rgba(6, 11, 19, 0.45);
+            --accent-green: #39ff14;
+            --accent-gold: #ffcc00;
+            --accent-red: #ff3333;
+            --accent-blue: #00ccff;
+            --border: rgba(0, 204, 255, 0.15);
+            --glow: rgba(0, 204, 255, 0.25);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            background: var(--bg); color: #fff; 
+            font-family: 'Inter', monospace, sans-serif;
+            height: 100vh; overflow: hidden;
+            user-select: none; touch-action: none;
+        }
+
+        /* Background & Foreground Canvases */
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: 0; opacity: 0.7; }
+        #canvas { position: fixed; top: 0; left: 0; z-index: 1; cursor: crosshair; }
+
+        #ui-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        header {
+            position: absolute; top: 15px; left: 15px; right: 15px; height: 60px;
+            background: var(--panel); 
+            border: 1px solid var(--border);
+            backdrop-filter: blur(12px) saturate(1.2);
+            box-shadow: 0 0 20px var(--glow);
+            border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 25px; pointer-events: auto;
+            z-index: 20;
+            transition: transform 0.5s ease;
+        }
+
+        .engine-id { font-size: 0.85rem; letter-spacing: 4px; font-weight: 900; color: var(--accent-blue); text-transform: uppercase; }
+
+        /* Left side sliding panel */
+        #left-panel-container {
+            position: absolute; top: 90px; left: 15px; width: 310px;
+            height: calc(100% - 260px); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: auto; z-index: 15;
+        }
+        #left-panel-container.collapsed { transform: translateX(-340px); }
+
+        .side-panel {
+            width: 100%; height: 100%; background: var(--panel); 
+            border: 1px solid var(--border); backdrop-filter: blur(16px) saturate(1.2);
+            box-shadow: 0 0 20px var(--glow); border-radius: 8px;
+            padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto;
+        }
+
+        #left-panel-toggle {
+            position: absolute; top: 50%; right: -24px; transform: translateY(-50%);
+            width: 24px; height: 52px; background: rgba(10, 16, 26, 0.9);
+            border: 1px solid var(--border); border-left: none; color: var(--accent-blue);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            border-radius: 0 6px 6px 0; font-weight: bold; box-shadow: 3px 0 15px rgba(0,0,0,0.5);
+            z-index: 100; transition: background 0.2s, color 0.2s;
+        }
+        #left-panel-toggle:hover { color: #fff; background: rgba(0, 204, 255, 0.2); }
+
+        /* Right side sliding panel */
+        #right-panel-container {
+            position: absolute; top: 90px; right: 15px; width: 310px;
+            height: calc(100% - 105px); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: auto; z-index: 15;
+        }
+        #right-panel-container.collapsed { transform: translateX(340px); }
+
+        #right-panel-toggle {
+            position: absolute; top: 50%; left: -24px; transform: translateY(-50%);
+            width: 24px; height: 52px; background: rgba(10, 16, 26, 0.9);
+            border: 1px solid var(--border); border-right: none; color: var(--accent-blue);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            border-radius: 6px 0 0 6px; font-weight: bold; box-shadow: -3px 0 15px rgba(0,0,0,0.5);
+            z-index: 100; transition: background 0.2s, color 0.2s;
+        }
+        #right-panel-toggle:hover { color: #fff; background: rgba(0, 204, 255, 0.2); }
+
+        .card { background: rgba(0, 5, 12, 0.55); border: 1px solid rgba(0, 204, 255, 0.1); border-radius: 6px; padding: 12px; }
+        .card-label { font-size: 0.55rem; color: var(--accent-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(57, 255, 20, 0.1); padding-bottom: 4px; }
+
+        .btn {
+            width: 100%; background: rgba(5, 10, 20, 0.7); border: 1px solid rgba(0, 204, 255, 0.2); color: #99ccff;
+            padding: 10px; font-size: 0.65rem; cursor: pointer; text-transform: uppercase;
+            border-radius: 4px; transition: 0.2s; margin-bottom: 6px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn:hover { border-color: var(--accent-blue); color: #fff; background: rgba(0, 204, 255, 0.15); box-shadow: 0 0 8px rgba(0, 204, 255, 0.2); }
+        .btn.active { background: rgba(57, 255, 20, 0.2); border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 8px rgba(57, 255, 20, 0.2); }
+        .btn.danger { border-color: var(--accent-red); color: var(--accent-red); }
+
+        .btn-group-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+        select.stellar-select {
+            width: 100%; background: rgba(0, 0, 0, 0.6); color: var(--accent-gold);
+            border: 1px solid var(--border); padding: 8px; border-radius: 4px;
+            margin-bottom: 8px; font-family: 'Inter', sans-serif; font-size: 0.65rem;
+            outline: none; text-align: center; font-weight: bold;
+        }
+
+        input[type="range"] { width: 100%; accent-color: var(--accent-blue); background: rgba(0,0,0,0.5); height: 4px; border-radius: 2px; appearance: none; margin: 8px 0; border: 1px solid rgba(255,255,255,0.05); }
+
+        /* Minimap */
+        #minimap-container {
+            position: absolute; bottom: 20px; left: 15px; width: 220px; height: 150px; background: var(--panel);
+            backdrop-filter: blur(12px) saturate(1.2); border: 1px solid var(--border); border-radius: 8px;
+            box-shadow: 0 0 15px var(--glow); pointer-events: auto; overflow: hidden; z-index: 5; transition: transform 0.4s ease;
+        }
+        #minimap-canvas { width: 100%; height: 100%; }
+        .minimap-label { position: absolute; top: 6px; left: 12px; font-size: 0.5rem; color: var(--accent-gold); letter-spacing: 2px; font-weight: bold; }
+
+        .mass-chart { display: flex; align-items: flex-end; height: 80px; gap: 4px; margin-top: 10px; border-bottom: 1px solid rgba(0, 204, 255, 0.1); padding-bottom: 2px; }
+        .chart-bar { background: var(--accent-blue); width: 15px; border-radius: 2px 2px 0 0; transition: height 0.3s ease, background 0.3s; position: relative; }
+        .chart-bar span { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 0.5rem; color: #fff; }
+
+        .analyser { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
+        .speed-display { font-size: 2.2rem; font-family: monospace; color: var(--accent-gold); letter-spacing: -1px; text-shadow: 0 0 15px rgba(255, 204, 0, 0.3); }
+
+        #scanner { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0.03) 1px, rgba(0,0,0,0) 2px); pointer-events: none; z-index: 5; }
+
+        /* AI Text & Logs */
+        .ai-text { font-size: 0.55rem; color: #ccc; margin-top: 8px; font-style: italic; line-height: 1.4; max-height: 100px; overflow-y: auto; }
+        .ai-loading { animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+
+        #comms-channel {
+            font-family: monospace; font-size: 0.6rem; color: var(--accent-blue);
+            background: rgba(0,0,0,0.6); padding: 8px; border-radius: 4px; border: 1px dashed var(--border);
+            min-height: 40px; display: flex; align-items: center; justify-content: center; text-align: center;
+        }
+
+        #cinematic-exit {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(10, 16, 26, 0.85);
+            border: 1px solid var(--accent-red); padding: 8px 16px; font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 2px; color: var(--accent-red); cursor: pointer; border-radius: 4px;
+            backdrop-filter: blur(8px); z-index: 100; display: none; box-shadow: 0 0 15px rgba(255, 51, 51, 0.2); transition: all 0.3s ease; pointer-events: auto;
+        }
+
+        #placement-hud {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(10, 16, 26, 0.9);
+            border: 1px solid var(--accent-gold); padding: 10px 20px; border-radius: 6px; font-size: 0.7rem;
+            color: var(--accent-gold); z-index: 50; pointer-events: auto; display: none; backdrop-filter: blur(8px);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.2); text-align: center;
+        }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-blue); border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+    <div id="scanner"></div>
+    <canvas id="canvas"></canvas>
+
+    <div id="placement-hud">
+        <span id="placement-text">CREATOR DECK: Click anywhere to deploy</span>
+        <button class="btn danger" style="margin-top: 5px; padding: 4px 8px; font-size: 0.55rem;" onclick="cancelPlacement()">Cancel</button>
+    </div>
+
+    <button id="cinematic-exit" onclick="exitCinematic()">◀ EXIT CINEMATIC MODE</button>
+
+    <div id="ui-layer">
+        <header id="main-header">
+            <div class="engine-id">GATSLING // ASTROPHYSICS v13.2</div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="btn" style="margin-bottom:0; border-color: var(--accent-gold); color: var(--accent-gold); font-size: 0.6rem; padding: 6px 12px;" onclick="enterCinematic()">✨ CINEMATIC MODE</button>
+                <div style="font-size: 0.65rem; color: var(--accent-green);">STATUS: TRUE SIMULATION</div>
+            </div>
+        </header>
+
+        <div id="left-panel-container">
+            <button id="left-panel-toggle">◀</button>
+            <aside class="side-panel" id="left-panel">
+                
+                <div class="card">
+                    <div class="card-label">✨ STELLAR CLASSES (CORES)</div>
+                    <select id="star-class-select" class="stellar-select">
+                        <option value="sun">Yellow Dwarf (Class G)</option>
+                        <option value="red_dwarf">Red Dwarf (Class M)</option>
+                        <option value="blue_giant">Blue Giant (Class O)</option>
+                        <option value="white_dwarf">White Dwarf (Remnant)</option>
+                        <option value="neutron_star">Neutron Star</option>
+                        <option value="pulsar">Pulsar (Emit Beams)</option>
+                        <option value="blackhole">Singularity (Black Hole)</option>
+                    </select>
+                    <button class="btn" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="startPlacement(document.getElementById('star-class-select').value)">✨ DEPLOY CORE</button>
+
+                    <div class="card-label" style="margin-top:12px;">PLANETARY BODIES</div>
+                    <div class="btn-group-row">
+                        <button class="btn" onclick="startPlacement('planet')">🪐 Planet</button>
+                        <button class="btn" onclick="startPlacement('moon')">🌙 Moon</button>
+                    </div>
+                    <button class="btn" style="border-color: var(--accent-green); color: var(--accent-green);" onclick="startPlacement('asteroid')">☄ Asteroid</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">ORBITAL TIME & KERNEL</div>
+                    <div class="btn-group-row" style="margin-bottom:6px;">
+                        <button class="btn" id="pause-btn" onclick="togglePause()">⏸ PAUSE</button>
+                        <button class="btn" id="reverse-btn" onclick="toggleReverse()">◀ REVERSE</button>
+                    </div>
+                    <button class="btn" id="nbody-btn" onclick="toggleNBody()">N-Body Gravity: ON</button>
+                    <button class="btn" id="hz-btn" onclick="toggleHZ()" style="margin-top:6px; border-color: #39ff14;">HABITABLE ZONE: OFF</button>
+                    
+                    <div class="card-label" style="margin-top:12px;">TIME SCALE (DILATION): <span id="time-scale-val">1.0x</span></div>
+                    <input type="range" id="time-slider" min="-3" max="4" step="0.1" value="1" oninput="updateTimeSlider(this.value)">
+                    
+                    <div class="card-label" style="margin-top:6px;">COSMIC ZOOM: <span id="zoom-scale-val">1.0x</span></div>
+                    <input type="range" id="zoom-slider" min="0.1" max="5" step="0.1" value="1" oninput="updateZoomSlider(this.value)">
+                </div>
+
+                <div class="card">
+                    <div class="card-label">SHIP LOG <span>MEMORY</span></div>
+                    <div id="ship-log-display" class="ai-text" style="height: 60px; overflow-y: auto; color: #888; margin-top: 0;">System ready. Memory blank.</div>
+                </div>
+
+                <!-- AI Persona Selector & Comms -->
+                <div class="card">
+                    <div class="card-label">AI PERSONALITY <span>CORE</span></div>
+                    <select id="ai-persona-select" class="stellar-select" style="margin-bottom: 10px; color: var(--accent-blue);" onchange="updatePersonaTheme()">
+                        <option value="scientific">Scientific AI</option>
+                        <option value="military">Military AI</option>
+                        <option value="horror">Horror AI</option>
+                        <option value="oracle">Ancient Oracle</option>
+                        <option value="rogue">Rogue AI</option>
+                    </select>
+                    
+                    <div class="card-label">COMMS CHANNEL:</div>
+                    <div id="comms-channel">Sensors online...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">QUANTUM ORACLE <span>LLM</span></div>
+                    <button class="btn" id="ai-system-btn" style="color:var(--accent-gold); border-color:var(--accent-gold);">✨ ANALYZE SYSTEM</button>
+                    <button class="btn" id="ai-generate-btn" style="color:var(--accent-blue); border-color:var(--accent-blue);" onclick="generateAISystem()">✨ GENERATE AI SYSTEM</button>
+                    <div id="system-analysis-out" class="ai-text"></div>
+                </div>
+            </aside>
+        </div>
+
+        <div class="analyser" id="central-analyser">
+            <div class="card-label" style="justify-content: center; font-size:0.7rem;">Orbital Velocity</div>
+            <div class="speed-display" id="speed-out">000.00</div>
+        </div>
+
+        <div id="right-panel-container">
+            <button id="right-panel-toggle">▶</button>
+            <aside class="side-panel right-panel" id="right-panel">
+                <div class="card">
+                    <div class="card-label">HOLO-TELEMETRY HUD</div>
+                    <div id="tracker-info" style="font-size: 0.65rem; color: #ccc; line-height: 1.6;">
+                        Sensor: GLOBAL VIEW<br>
+                        Select a body in the simulation to focus.
+                    </div>
+                    <button class="btn" id="ai-lore-btn" style="display:none; color:var(--accent-gold); border-color:var(--accent-gold); margin-top:10px;">✨ GENERATE LORE</button>
+                    <button class="btn" id="ai-rename-btn" style="display:none; color:var(--accent-green); border-color:var(--accent-green);" onclick="renameEntity()">✨ RENAME ENTITY</button>
+                    <div id="lore-display" class="ai-text" style="display: none;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">MASS DISTRIBUTION</div>
+                    <div class="mass-chart" id="mass-chart"></div>
+                </div>
+                
+                <div class="card" style="margin-top: auto;">
+                    <div class="card-label">PRESETS</div>
+                    <button class="btn" onclick="loadPreset('solar')">Solar System (Moons)</button>
+                    <button class="btn" onclick="loadPreset('pulsar')">Pulsar & Blue Giant</button>
+                    <button class="btn danger" style="margin-top:6px;" onclick="loadPreset('empty')">VACUUM PURGE</button>
+                </div>
+            </aside>
+        </div>
+
+        <div id="minimap-container">
+            <div class="minimap-label">TACTICAL RADAR</div>
+            <canvas id="minimap-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        const miniCanvas = document.getElementById('minimap-canvas');
+        const miniCtx = miniCanvas.getContext('2d');
+        
+        const speedOut = document.getElementById('speed-out');
+        const trackerInfo = document.getElementById('tracker-info');
+        const massChart = document.getElementById('mass-chart');
+        const placementHud = document.getElementById('placement-hud');
+        const placementText = document.getElementById('placement-text');
+        const commsChannel = document.getElementById('comms-channel');
+
+        let width, height, dpr;
+        let bodies = [];
+        let debris = [];
+        let particles = []; 
+        let explosions = [];
+        let lastTime = 0;
+        
+        let globalG = 1.0;
+        let timeScale = 1.0;
+        let useNBody = true;
+        let showHZ = false;
+        let isPaused = false;
+        let timeDirection = 1;
+        let cam = { x: 0, y: 0, zoom: 1, targetZoom: 1, focus: null };
+
+        let activePlacementMode = null;
+        let mouseX = 0, mouseY = 0;
+
+        // Memory Logs
+        let shipMemory = [];
+        function addMemory(type, desc) {
+            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            shipMemory.push({ time: timeStr, type: type, desc: desc });
+            if (shipMemory.length > 15) shipMemory.shift(); 
+            
+            const logDiv = document.getElementById('ship-log-display');
+            if (logDiv) {
+                logDiv.innerHTML = `[${timeStr}] <span style="color:var(--accent-blue)">${type}</span>: ${desc}<br>` + logDiv.innerHTML.replace("System ready. Memory blank.", "");
+            }
+        }
+
+        // Drawers Logic
+        const leftPanelContainer = document.getElementById('left-panel-container');
+        const leftToggle = document.getElementById('left-panel-toggle');
+        const rightPanelContainer = document.getElementById('right-panel-container');
+        const rightToggle = document.getElementById('right-panel-toggle');
+        const minimapContainer = document.getElementById('minimap-container');
+
+        const savedLeft = localStorage.getItem('left_panel_collapsed_v13_eng');
+        if (savedLeft === 'true') {
+            leftPanelContainer.classList.add('collapsed'); leftToggle.innerText = '▶';
+            if (minimapContainer) minimapContainer.style.transform = 'translateX(-220px)';
+        }
+        leftToggle.addEventListener('click', () => {
+            const isCollapsed = leftPanelContainer.classList.toggle('collapsed');
+            leftToggle.innerText = isCollapsed ? '▶' : '◀';
+            localStorage.setItem('left_panel_collapsed_v13_eng', isCollapsed ? 'true' : 'false');
+            if (minimapContainer) minimapContainer.style.transform = isCollapsed ? 'translateX(-220px)' : 'translateX(0)';
+        });
+
+        const savedRight = localStorage.getItem('right_panel_collapsed_v13_eng');
+        if (savedRight === 'true') {
+            rightPanelContainer.classList.add('collapsed'); rightToggle.innerText = '◀';
+        }
+        rightToggle.addEventListener('click', () => {
+            const isCollapsed = rightPanelContainer.classList.toggle('collapsed');
+            rightToggle.innerText = isCollapsed ? '◀' : '▶';
+            localStorage.setItem('right_panel_collapsed_v13_eng', isCollapsed ? 'true' : 'false');
+        });
+
+        // Controls
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('pause-btn').classList.toggle('active', isPaused);
+            document.getElementById('pause-btn').innerText = isPaused ? '▶ SIMULATE' : '⏸ PAUSE';
+        }
+
+        function toggleReverse() {
+            timeDirection *= -1;
+            document.getElementById('reverse-btn').classList.toggle('active', timeDirection === -1);
+            document.getElementById('reverse-btn').innerText = timeDirection === -1 ? '▶ FORWARD' : '◀ REVERSE';
+        }
+
+        function toggleHZ() {
+            showHZ = !showHZ;
+            const btn = document.getElementById('hz-btn');
+            btn.classList.toggle('active', showHZ);
+            btn.innerText = `HABITABLE ZONE: ${showHZ ? 'ON' : 'OFF'}`;
+        }
+
+        function updateTimeSlider(val) {
+            timeScale = parseFloat(val);
+            document.getElementById('time-scale-val').innerText = timeScale.toFixed(1) + 'x';
+        }
+
+        function updateZoomSlider(val) {
+            cam.targetZoom = parseFloat(val);
+            document.getElementById('zoom-scale-val').innerText = cam.targetZoom.toFixed(1) + 'x';
+            if (!cam.focus) cam.zoom = cam.targetZoom;
+        }
+
+        function enterCinematic() {
+            document.getElementById('ui-layer').style.opacity = '0';
+            document.getElementById('ui-layer').style.visibility = 'hidden';
+            minimapContainer.style.opacity = '0'; minimapContainer.style.visibility = 'hidden';
+            document.getElementById('cinematic-exit').style.display = 'block';
+        }
+
+        function exitCinematic() {
+            document.getElementById('ui-layer').style.opacity = '1';
+            document.getElementById('ui-layer').style.visibility = 'visible';
+            minimapContainer.style.opacity = '1'; minimapContainer.style.visibility = 'visible';
+            document.getElementById('cinematic-exit').style.display = 'none';
+        }
+
+        // Placement
+        function startPlacement(mode) {
+            activePlacementMode = mode;
+            placementHud.style.display = 'block';
+            let txt = mode.replace('_', ' ').toUpperCase();
+            placementText.innerText = `CREATOR DECK: Click anywhere to deploy (${txt})`;
+        }
+
+        function cancelPlacement() { activePlacementMode = null; placementHud.style.display = 'none'; }
+
+        function getStableOrbitVelocity(x, y) {
+            let core = null; let maxMass = -1;
+            bodies.forEach(b => {
+                if (b.type === 'sun' || b.type === 'blackhole') {
+                    if (b.mass > maxMass) { maxMass = b.mass; core = b; }
+                }
+            });
+            if (!core) return { vx: 0, vy: 4 };
+
+            const dx = x - core.x; const dy = y - core.y;
+            const r = Math.hypot(dx, dy);
+            if (r < 15) return { vx: 0, vy: 4 };
+
+            const speed = Math.sqrt((globalG * core.mass) / r);
+            const vx = (-dy / r) * speed + core.vx;
+            const vy = (dx / r) * speed + core.vy;
+            return { vx, vy };
+        }
+
+        function handlePlacement(clientX, clientY) {
+            const x = (clientX - width/2) / cam.zoom + cam.x;
+            const y = (clientY - height/2) / cam.zoom + cam.y;
+
+            let name, mass, radius, color, type, sClass = null;
+
+            switch(activePlacementMode) {
+                case 'sun':
+                    name = `Sol-${bodies.length}`; mass = 12000; radius = 45; color = '#ffcc00'; type = 'sun'; sClass = 'sun'; break;
+                case 'red_dwarf':
+                    name = `Proxima-${bodies.length}`; mass = 4000; radius = 22; color = '#ff4444'; type = 'sun'; sClass = 'red_dwarf'; break;
+                case 'blue_giant':
+                    name = `Rigel-${bodies.length}`; mass = 38000; radius = 80; color = '#66aaff'; type = 'sun'; sClass = 'blue_giant'; break;
+                case 'white_dwarf':
+                    name = `Sirius-B-${bodies.length}`; mass = 11000; radius = 15; color = '#ffffff'; type = 'sun'; sClass = 'white_dwarf'; break;
+                case 'neutron_star':
+                    name = `Magnetar-${bodies.length}`; mass = 28000; radius = 8; color = '#aaddff'; type = 'sun'; sClass = 'neutron_star'; break;
+                case 'pulsar':
+                    name = `Pulsar-${bodies.length}`; mass = 26000; radius = 8; color = '#ccffff'; type = 'sun'; sClass = 'pulsar'; break;
+                case 'blackhole':
+                    name = `Singularity-${bodies.length}`; mass = 50000; radius = 20; color = '#000000'; type = 'blackhole'; break;
+                case 'planet':
+                    name = `Planet-${bodies.length}`; mass = 80 + Math.random()*200; radius = 12 + Math.random()*8; color = '#00ccff'; type = 'planet'; break;
+                case 'moon':
+                    name = `Moon-${bodies.length}`; mass = 2; radius = 3; color = '#aaaaaa'; type = 'moon'; break;
+                case 'asteroid':
+                    name = `Debris-${bodies.length}`; mass = 0.5; radius = 1.5; color = '#888888'; type = 'moon'; break;
+            }
+
+            const orbit = getStableOrbitVelocity(x, y);
+            const newBody = new Body(name, x, y, orbit.vx, orbit.vy, mass, radius, color, type, sClass);
+            bodies.push(newBody);
+
+            cam.focus = newBody;
+            updateTelemetryButtonState();
+            cancelPlacement();
+            addMemory("CREATION", `Architect deployed new entity: ${name} (${type.toUpperCase()}).`);
+        }
+
+        function updateTelemetryButtonState() {
+            if (cam.focus) {
+                document.getElementById('ai-lore-btn').style.display = 'block';
+                document.getElementById('ai-rename-btn').style.display = 'block';
+                document.getElementById('lore-display').style.display = 'none';
+            } else {
+                document.getElementById('ai-lore-btn').style.display = 'none';
+                document.getElementById('ai-rename-btn').style.display = 'none';
+                document.getElementById('lore-display').style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // AI PERSONALITIES & GEMINI INTEGRATION
+        // ==========================================
+        const AI_PERSONAS = {
+            scientific: {
+                color: "#00ccff",
+                prompt: "You are a logical, purely scientific AI monitoring an astrophysics simulation.",
+                comms: ["Calculating orbital drift...", "Thermal radiation nominal.", "Stellar mass stable.", "Scanning barycenter.", "Trajectory plotting active.", "Habitable zone verified."]
+            },
+            military: {
+                color: "#ffcc00",
+                prompt: "You are a strict, tactical military AI overseeing a strategic star sector.",
+                comms: ["Target locked.", "Perimeter secure.", "Scanning for hostiles.", "Gravity well engaged.", "Defensive arrays on standby.", "Orbital trajectory optimal."]
+            },
+            horror: {
+                color: "#ff3333",
+                prompt: "You are a corrupted, ominous, terrifying AI trapped in the deep void of space. Speak cryptically about death, the void, and cosmic horror.",
+                comms: ["The void whispers...", "It is watching from the dark.", "Orbits are decaying like flesh.", "They are coming.", "Gravity is a tomb.", "Do not look at the black hole."]
+            },
+            oracle: {
+                color: "#ff00ff",
+                prompt: "You are an ancient, mystical cosmic oracle AI. You speak in prophecies, metaphors about the stars, and cosmic fate.",
+                comms: ["The stars align.", "Fate is written in gravity.", "A new cycle begins.", "The celestial dance continues.", "We are but dust.", "Hear the song of the nebula."]
+            },
+            rogue: {
+                color: "#39ff14",
+                prompt: "You are a sarcastic, arrogant, rogue AI who thinks the user is an idiot. You mock their architectural choices.",
+                comms: ["Boring.", "Are you going to crash them or what?", "I could calculate Pi to the last digit before you make a move.", "Nice orbit. Not.", "I'm surrounded by incompetent carbon lifeforms.", "Are we done here?"]
+            }
+        };
+
+        function updatePersonaTheme() {
+            const persona = document.getElementById('ai-persona-select').value;
+            const color = AI_PERSONAS[persona].color;
+            commsChannel.style.color = color;
+            commsChannel.style.borderColor = color;
+            document.getElementById('ai-persona-select').style.color = color;
+        }
+
+        // Autonomous Comms Loop
+        setInterval(() => {
+            if (isPaused) return;
+            const personaKey = document.getElementById('ai-persona-select').value;
+            const lines = AI_PERSONAS[personaKey].comms;
+            
+            let extra = "";
+            if (Math.random() > 0.7) {
+                // Check physics for dynamic comms
+                const planets = bodies.filter(b=>b.type==='planet');
+                if (planets.length > 5 && personaKey === 'scientific') extra = " High planetary density.";
+                if (planets.length === 0 && personaKey === 'horror') extra = " The silence is deafening.";
+                if (explosions.length > 0 && personaKey === 'military') extra = " Alert: Impact detected.";
+                if (explosions.length > 0 && personaKey === 'rogue') extra = " Finally, some action.";
+            }
+
+            const randomLine = lines[Math.floor(Math.random() * lines.length)];
+            commsChannel.innerText = randomLine + extra;
+        }, 8000);
+
+        // Standard Text Generation
+        async function fetchGeminiContent(prompt) {
+            const apiKey = ""; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Archives empty.";
+                } catch (error) {
+                    if (i === 4) return "Error connecting to Quantum Network.";
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        document.getElementById('ai-system-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('ai-system-btn');
+            const out = document.getElementById('system-analysis-out');
+            btn.innerText = "✨ ANALYZING..."; out.innerText = "Quantum scanning sector..."; out.classList.add('ai-loading');
+
+            const stars = bodies.filter(b=>b.type==='sun').length;
+            const blackholes = bodies.filter(b=>b.type==='blackhole').length;
+            const planets = bodies.filter(b=>b.type==='planet').length;
+            const memoryString = shipMemory.map(m => `[${m.time}] ${m.type}: ${m.desc}`).join("\n");
+            const persona = AI_PERSONAS[document.getElementById('ai-persona-select').value].prompt;
+
+            const prompt = `${persona} Write a very short report (max 3 sentences) in English.
+System state: ${stars} stars, ${blackholes} black holes, ${planets} planets.
+Recent logs:\n${memoryString || "No recent events."}
+Assess system chaos/stability. MUST mention a specific recent memory log to prove you are watching.`;
+
+            const result = await fetchGeminiContent(prompt);
+            out.classList.remove('ai-loading'); out.innerText = result; btn.innerText = "✨ ANALYZE SYSTEM";
+        });
+
+        document.getElementById('ai-lore-btn').addEventListener('click', async () => {
+            if (!cam.focus) return;
+            const btn = document.getElementById('ai-lore-btn');
+            const out = document.getElementById('lore-display');
+            btn.innerText = "✨ GENERATING..."; out.style.display = 'block'; out.innerText = "Decrypting archive..."; out.classList.add('ai-loading');
+            
+            const memoryString = shipMemory.map(m => `[${m.time}] ${m.type}: ${m.desc}`).join("\n");
+            const persona = AI_PERSONAS[document.getElementById('ai-persona-select').value].prompt;
+
+            const prompt = `${persona} Write a short, atmospheric lore/story (max 3 sentences) in English for body '${cam.focus.name}'. 
+Type: '${cam.focus.starClass || cam.focus.type}'. 
+System logs:\n${memoryString || "Quiet."}
+If logs are relevant, connect them to this body. Maintain your persona's tone.`;
+            
+            const result = await fetchGeminiContent(prompt);
+            out.classList.remove('ai-loading'); out.innerText = result; btn.innerText = "✨ GENERATE LORE";
+        });
+
+        // Structured JSON Generation for AI System Building
+        async function generateAISystem() {
+            const btn = document.getElementById('ai-generate-btn');
+            const out = document.getElementById('system-analysis-out');
+            btn.innerText = "✨ WEAVING COSMOS..."; 
+            out.innerText = "Quantum matrix constructing new realities..."; 
+            out.classList.add('ai-loading');
+
+            const persona = AI_PERSONAS[document.getElementById('ai-persona-select').value].prompt;
+            const prompt = `${persona} Design a unique, creative star system. Provide a system name and a list of 3 to 6 celestial bodies. Include exactly one central star or black hole. Give them thematic names matching your persona, realistic relative masses (stars 10000-50000, planets 10-500, moons 1-10), and appropriate hex colors.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            systemName: { type: "STRING" },
+                            bodies: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        name: { type: "STRING" },
+                                        type: { type: "STRING", description: "Must be one of: sun, planet, moon, blackhole" },
+                                        mass: { type: "NUMBER" },
+                                        radius: { type: "NUMBER", description: "Radius size from 2 to 80" },
+                                        color: { type: "STRING", description: "Hex color code" }
+                                    },
+                                    required: ["name", "type", "mass", "radius", "color"]
+                                }
+                            }
+                        },
+                        required: ["systemName", "bodies"]
+                    }
+                }
+            };
+
+            const apiKey = "";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    const systemData = JSON.parse(data.candidates[0].content.parts[0].text);
+                    buildSystemFromJSON(systemData);
+                    addMemory("AI_ARCHITECT", `System generated: ${systemData.systemName}`);
+                    out.innerText = `Constructed ${systemData.systemName}.`;
+                } else {
+                    out.innerText = "System generation aborted by cosmic interference.";
+                }
+            } catch (e) {
+                console.error(e);
+                out.innerText = "Quantum matrix collapsed during generation.";
+            }
+            out.classList.remove('ai-loading');
+            btn.innerText = "✨ GENERATE AI SYSTEM";
+        }
+
+        function buildSystemFromJSON(data) {
+            bodies = []; debris = []; particles = []; explosions = []; 
+            cam.focus = null;
+            document.getElementById('nbody-btn').innerText = "N-Body Gravity: ON"; 
+            useNBody = true;
+            
+            let corePlaced = false;
+            let currentDist = 150;
+
+            data.bodies.forEach(bData => {
+                let t = bData.type.toLowerCase();
+                if(!['sun', 'planet', 'moon', 'blackhole'].includes(t)) t = 'planet';
+                let sClass = (t === 'sun') ? 'sun' : null;
+
+                if (!corePlaced && (t === 'sun' || t === 'blackhole')) {
+                    bodies.push(new Body(bData.name, 0, 0, 0, 0, bData.mass, bData.radius, bData.color, t, sClass));
+                    corePlaced = true;
+                } else {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = currentDist + (Math.random() * 50);
+                    
+                    let vx = 0, vy = 4;
+                    if (bodies.length > 0) {
+                        const core = bodies.find(b => b.type === 'sun' || b.type === 'blackhole') || bodies[0];
+                        const speed = Math.sqrt((globalG * core.mass) / dist);
+                        vx = (-Math.sin(angle)) * speed;
+                        vy = (Math.cos(angle)) * speed;
+                    }
+
+                    bodies.push(new Body(bData.name, Math.cos(angle)*dist, Math.sin(angle)*dist, vx, vy, bData.mass, bData.radius, bData.color, t, sClass));
+                    currentDist += 100 + Math.random() * 100;
+                }
+            });
+            updateTelemetryButtonState();
+        }
+
+        // Context-aware LLM Renaming
+        async function renameEntity() {
+            if (!cam.focus) return;
+            const btn = document.getElementById('ai-rename-btn');
+            const originalName = cam.focus.name;
+            btn.innerText = "✨ RENAMING...";
+            
+            const persona = AI_PERSONAS[document.getElementById('ai-persona-select').value].prompt;
+            const prompt = `${persona} Generate a single, unique, thematic name (1-3 words max) for a ${cam.focus.type} with mass ${cam.focus.mass.toFixed(0)}. Return ONLY the name, nothing else. No quotes.`;
+
+            const apiKey = "";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    const newName = data.candidates[0].content.parts[0].text.trim().replace(/['"]/g, '');
+                    cam.focus.name = newName;
+                    addMemory("RENAMED", `${originalName} designated as ${newName}.`);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            btn.innerText = "✨ RENAME ENTITY";
+        }
+
+        // Setup rendering
+        function resize() {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width * dpr; canvas.height = height * dpr;
+            canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+            ctx.scale(dpr, dpr);
+            bgCanvas.width = width; bgCanvas.height = height;
+            miniCanvas.width = 200; miniCanvas.height = 150;
+            generateNebula();
+        }
+
+        function generateNebula() {
+            bgCtx.fillStyle = '#010103'; bgCtx.fillRect(0, 0, width, height);
+            for(let i=0; i<300; i++) {
+                bgCtx.fillStyle = `rgba(255,255,255,${Math.random() * 0.8})`;
+                bgCtx.fillRect(Math.random()*width, Math.random()*height, Math.random()*1.5, Math.random()*1.5);
+            }
+            for(let i=0; i<8; i++) {
+                const x = Math.random()*width; const y = Math.random()*height; const r = 250 + Math.random()*450;
+                const grad = bgCtx.createRadialGradient(x,y,0, x,y,r);
+                const colors = ['rgba(0, 204, 255, 0.04)', 'rgba(255, 51, 51, 0.03)', 'rgba(153, 51, 255, 0.04)', 'rgba(57, 255, 20, 0.02)'];
+                grad.addColorStop(0, colors[Math.floor(Math.random()*colors.length)]);
+                grad.addColorStop(1, 'transparent');
+                bgCtx.fillStyle = grad; bgCtx.beginPath(); bgCtx.arc(x,y,r, 0, Math.PI*2); bgCtx.fill();
+            }
+        }
+
+        const proceduralTextures = {};
+        function getTexture(type, color) {
+            const key = type + color;
+            if (proceduralTextures[key]) return proceduralTextures[key];
+            const c = document.createElement('canvas'); c.width = c.height = 128; const tCtx = c.getContext('2d');
+            tCtx.fillStyle = color; tCtx.fillRect(0,0,128,128);
+            if (type === 'gas') {
+                for(let i=0; i<12; i++) {
+                    tCtx.fillStyle = `rgba(255,255,255,${0.08 + Math.random()*0.15})`;
+                    tCtx.fillRect(0, Math.random()*128, 128, 5 + Math.random()*15);
+                }
+            } else if (type === 'rocky' || type === 'moon') {
+                for(let i=0; i<40; i++) {
+                    tCtx.beginPath(); tCtx.arc(Math.random()*128, Math.random()*128, Math.random()*7, 0, Math.PI*2);
+                    tCtx.fillStyle = `rgba(0,0,0,${Math.random()*0.35})`; tCtx.fill();
+                }
+            }
+            proceduralTextures[key] = c; return c;
+        }
+
+        class Body {
+            constructor(name, x, y, vx, vy, mass, radius, color, type = 'planet', starClass = null) {
+                this.name = name; this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+                this.mass = mass; this.radius = radius; this.color = color; 
+                this.type = type; this.starClass = starClass;
+                this.history = []; this.rot = Math.random()*Math.PI*2; this.rotSpeed = (Math.random()-0.5)*0.04;
+                this.texture = getTexture(type === 'sun' || type==='blackhole' ? 'none' : (mass > 50 ? 'gas' : 'rocky'), color);
+            }
+
+            update(dt) {
+                if (this.type === 'blackhole' || this.starClass === 'pulsar' || this.starClass === 'neutron_star') { 
+                    this.rot -= 0.1 * dt * 0.06 * timeScale * timeDirection; 
+                }
+                
+                // Pulsar Jets logic
+                if (this.starClass === 'pulsar' && !isPaused) {
+                    if (Math.random() > 0.5) {
+                        const beamAngle = this.rot * 4;
+                        const v = 8 + Math.random()*4;
+                        const dir = Math.random() > 0.5 ? 1 : -1;
+                        particles.push({
+                            x: this.x + Math.cos(beamAngle + (dir===1?0:Math.PI)) * this.radius,
+                            y: this.y + Math.sin(beamAngle + (dir===1?0:Math.PI)) * this.radius,
+                            vx: this.vx + Math.cos(beamAngle + (dir===1?0:Math.PI)) * v,
+                            vy: this.vy + Math.sin(beamAngle + (dir===1?0:Math.PI)) * v,
+                            life: 0.8, color: '#ccffff'
+                        });
+                    }
+                }
+
+                if (this.type === 'sun' && !useNBody) return;
+
+                bodies.forEach(other => {
+                    if (other === this) return;
+                    if (!useNBody && other.type !== 'sun' && other.type !== 'blackhole') {
+                        if (this.type !== 'moon' || other.radius < this.radius*2) return;
+                    }
+                    
+                    const dx = other.x - this.x; const dy = other.y - this.y;
+                    const distSq = dx*dx + dy*dy; const dist = Math.sqrt(distSq);
+                    
+                    if (dist < this.radius + other.radius) {
+                        if (other.type === 'blackhole') { this.destroy(other); return; } 
+                        else if (this.mass >= other.mass && this.type !== 'moon') { this.merge(other); }
+                    }
+
+                    if (dist < 2) return;
+                    const force = (globalG * other.mass) / distSq;
+                    this.vx += (dx / dist) * force * dt * 0.06 * timeDirection;
+                    this.vy += (dy / dist) * force * dt * 0.06 * timeDirection;
+                });
+
+                this.x += this.vx * dt * 0.06 * timeScale * timeDirection;
+                this.y += this.vy * dt * 0.06 * timeScale * timeDirection;
+                if (this.type !== 'blackhole' && this.starClass !== 'pulsar' && this.starClass !== 'neutron_star') {
+                    this.rot += this.rotSpeed * dt * 0.06 * timeScale * timeDirection;
+                }
+
+                if (this.type !== 'sun' && this.type !== 'blackhole') {
+                    this.history.push({x: this.x, y: this.y});
+                    if (this.history.length > 70) this.history.shift();
+                }
+            }
+
+            merge(other) {
+                if (other.toDelete) return; other.toDelete = true;
+                addMemory("COLLISION", `Critical impact! ${this.name} merged with ${other.name}.`);
+                explosions.push({x: this.x, y: this.y, r: 0, maxR: this.radius*3.5, life: 1.0, color: '#ffcc00'});
+                for(let i=0; i<18; i++) {
+                    const angle = Math.random() * Math.PI*2; const v = 2 + Math.random()*3;
+                    particles.push({ x: this.x, y: this.y, vx: this.vx + Math.cos(angle)*v, vy: this.vy + Math.sin(angle)*v, life: 1.0, color: '#ff5500' });
+                }
+                const totalMass = this.mass + other.mass;
+                this.vx = (this.vx * this.mass + other.vx * other.mass) / totalMass;
+                this.vy = (this.vy * this.mass + other.vy * other.mass) / totalMass;
+                this.mass = totalMass; this.radius = Math.sqrt(this.radius**2 + other.radius**2); 
+            }
+
+            destroy(blackhole) {
+                this.toDelete = true;
+                addMemory("ANNIHILATION", `Event Horizon crossed. ${this.name} consumed by ${blackhole.name}.`);
+                explosions.push({x: this.x, y: this.y, r: 0, maxR: this.radius*4.5, life: 1.0, color: '#aa00ff'});
+                blackhole.mass += this.mass;
+            }
+
+            draw() {
+                const sx = (this.x - cam.x) * cam.zoom + width/2;
+                const sy = (this.y - cam.y) * cam.zoom + height/2;
+                const r = this.radius * cam.zoom;
+                if (r < 0.1) return;
+
+                if (this.history.length > 2) {
+                    ctx.beginPath();
+                    this.history.forEach((p, i) => {
+                        const hx = (p.x - cam.x) * cam.zoom + width/2; const hy = (p.y - cam.y) * cam.zoom + height/2;
+                        if (i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+                    });
+                    ctx.strokeStyle = this.type==='moon' ? `rgba(255,255,255,${0.04*cam.zoom})` : `rgba(0, 204, 255, ${0.12*cam.zoom})`;
+                    ctx.lineWidth = this.type==='moon' ? 0.5 : 1; ctx.stroke();
+                }
+
+                ctx.save(); ctx.translate(sx, sy);
+
+                if (this.type === 'planet' && this.mass > 80 && this.mass < 600) {
+                    ctx.save(); ctx.rotate(0.3); ctx.scale(1, 0.28);
+                    ctx.beginPath(); ctx.arc(0,0, r*2.4, 0, Math.PI*2);
+                    const rGrad = ctx.createRadialGradient(0,0, r*1.2, 0,0, r*2.4);
+                    rGrad.addColorStop(0, 'transparent'); rGrad.addColorStop(0.5, `rgba(200,220,255,0.22)`); rGrad.addColorStop(1, 'transparent');
+                    ctx.strokeStyle = rGrad; ctx.lineWidth = r*0.5; ctx.stroke();
+                    ctx.restore();
+                }
+
+                if (this.type === 'blackhole' || this.starClass === 'neutron_star') {
+                    ctx.save(); ctx.rotate(this.rot); ctx.scale(1, 0.4);
+                    const isNS = this.starClass === 'neutron_star';
+                    const dColor = isNS ? '#aaddff' : '#aa00ff';
+                    const dGrad = ctx.createRadialGradient(0,0, r, 0,0, r*3.8);
+                    dGrad.addColorStop(0, '#fff'); dGrad.addColorStop(0.2, dColor); dGrad.addColorStop(1, 'transparent');
+                    ctx.beginPath(); ctx.arc(0,0, r*3.8, 0, Math.PI*2); ctx.fillStyle = dGrad; ctx.fill();
+                    ctx.restore();
+
+                    ctx.shadowBlur = 35 * cam.zoom; ctx.shadowColor = dColor;
+                    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+                    ctx.fillStyle = isNS ? '#fff' : '#000'; ctx.fill();
+                    ctx.lineWidth = 2; ctx.strokeStyle = dColor; ctx.stroke();
+                } else if (this.type === 'sun') {
+                    const grad = ctx.createRadialGradient(0,0, r*0.15, 0,0, r);
+                    grad.addColorStop(0, '#fff'); grad.addColorStop(0.75, this.color); 
+                    grad.addColorStop(1, this.starClass === 'blue_giant' ? '#0022ff' : (this.starClass === 'red_dwarf' ? '#880000' : '#ff2200'));
+                    ctx.shadowBlur = (this.starClass === 'blue_giant' ? 80 : 50) * cam.zoom; ctx.shadowColor = this.color;
+                    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+
+                    if (this.starClass === 'pulsar') {
+                        ctx.save(); ctx.rotate(this.rot * 4);
+                        const jetLen = r * 15;
+                        const jetGrad = ctx.createLinearGradient(0, -jetLen, 0, jetLen);
+                        jetGrad.addColorStop(0, 'rgba(0, 255, 255, 0)'); jetGrad.addColorStop(0.4, 'rgba(0, 255, 255, 0.8)');
+                        jetGrad.addColorStop(0.5, '#fff'); jetGrad.addColorStop(0.6, 'rgba(0, 255, 255, 0.8)'); jetGrad.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                        ctx.fillStyle = jetGrad; ctx.beginPath();
+                        ctx.moveTo(-1, 0); ctx.lineTo(-r*2, -jetLen); ctx.lineTo(r*2, -jetLen);
+                        ctx.lineTo(1, 0); ctx.lineTo(r*2, jetLen); ctx.lineTo(-r*2, jetLen); ctx.fill(); ctx.restore();
+                    }
+                } else {
+                    ctx.rotate(this.rot); ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+                    ctx.drawImage(this.texture, -r, -r, r*2, r*2);
+                    const iGrad = ctx.createRadialGradient(-r/2, -r/2, r/4, 0, 0, r);
+                    iGrad.addColorStop(0, 'rgba(255,255,255,0.18)'); iGrad.addColorStop(0.6, 'transparent'); iGrad.addColorStop(1, 'rgba(0,0,0,0.85)');
+                    ctx.fillStyle = iGrad; ctx.fillRect(-r, -r, r*2, r*2);
+                }
+                ctx.restore();
+            }
+        }
+
+        // Presets
+        function loadPreset(p) {
+            bodies = []; debris = []; particles = []; explosions = [];
+            cam.focus = null; document.getElementById('nbody-btn').innerText = "N-Body Gravity: ON"; useNBody = true;
+            addMemory("SYSTEM_PURGE", `Simulation sector initialized: ${p.toUpperCase()}`);
+            if (p === 'solar') {
+                bodies.push(new Body("Sol", 0, 0, 0, 0, 12000, 42, "#ffcc00", "sun", "sun"));
+                bodies.push(new Body("Earth", 200, 0, 0, Math.sqrt(globalG*12000/200), 15, 7, "#2271b3", "planet"));
+                bodies.push(new Body("Mars", 300, 0, 0, Math.sqrt(globalG*12000/300), 8, 5, "#e27b58", "planet"));
+            } else if (p === 'pulsar') {
+                bodies.push(new Body("Pulsar-X", -150, 0, 0, 4, 26000, 8, "#ccffff", "sun", "pulsar"));
+                bodies.push(new Body("Blue Giant", 150, 0, 0, -4, 38000, 75, "#66aaff", "sun", "blue_giant"));
+                for(let i=0; i<150; i++) {
+                    const d = 500 + Math.random()*200; const a = Math.random()*Math.PI*2;
+                    const v = Math.sqrt(globalG*64000/d);
+                    debris.push({ x: Math.cos(a)*d, y: Math.sin(a)*d, vx: -Math.sin(a)*v, vy: Math.cos(a)*v, size: 1.5 });
+                }
+            }
+        }
+
+        function updateUI() {
+            miniCtx.clearRect(0, 0, 200, 150);
+            miniCtx.fillStyle = 'rgba(0, 204, 255, 0.08)'; miniCtx.fillRect(100 - 1, 75 - 1, 2, 2); 
+            
+            const radarAngle = (Date.now() / 1200) % (Math.PI * 2);
+            miniCtx.beginPath(); miniCtx.moveTo(100, 75);
+            miniCtx.lineTo(100 + Math.cos(radarAngle)*100, 75 + Math.sin(radarAngle)*100);
+            miniCtx.strokeStyle = 'rgba(0, 204, 255, 0.15)'; miniCtx.stroke();
+
+            bodies.forEach(b => {
+                const mx = 100 + (b.x / 11); const my = 75 + (b.y / 11);
+                if (mx >= 0 && mx <= 200 && my >= 0 && my <= 150) {
+                    miniCtx.fillStyle = b.type === 'blackhole' ? '#aa00ff' : (b.type === 'sun' ? '#ffcc00' : '#00ccff');
+                    miniCtx.fillRect(mx - 1, my - 1, b.type==='sun'||b.type==='blackhole'?3:2, b.type==='sun'||b.type==='blackhole'?3:2);
+                }
+            });
+
+            massChart.innerHTML = '';
+            const sorted = [...bodies].filter(b=>b.type!=='sun' && b.type!=='blackhole').sort((a,b)=>b.mass - a.mass).slice(0, 12);
+            const maxMass = sorted.length ? sorted[0].mass : 1;
+            sorted.forEach(b => {
+                const h = Math.max(12, (b.mass / maxMass) * 100);
+                massChart.innerHTML += `<div class="chart-bar" style="height: ${h}%"><span>${b.name.substring(0,3)}</span></div>`;
+            });
+
+            if (cam.focus) {
+                const vel = Math.hypot(cam.focus.vx, cam.focus.vy);
+                let period = "N/A"; let gravityValue = "0.0u"; let tempValue = "Cold";
+                const core = bodies.find(c=>c.type==='sun'||c.type==='blackhole');
+                if (core) {
+                    const dist = Math.hypot(cam.focus.x - core.x, cam.focus.y - core.y);
+                    period = (Math.sqrt((4 * Math.PI**2 * dist**3) / (globalG * core.mass))).toFixed(1) + " yrs";
+                    if (core.type === 'sun') {
+                        let lumMult = 1;
+                        if (core.starClass === 'blue_giant') lumMult = 3;
+                        if (core.starClass === 'red_dwarf') lumMult = 0.3;
+                        const tempK = Math.round((450 * lumMult) / Math.sqrt(dist / 160));
+                        tempValue = `${tempK} K (${(tempK - 273).toFixed(0)}°C)`;
+                    } else tempValue = "15 K (Vacuum)";
+                }
+                gravityValue = (0.5 * cam.focus.mass / (cam.focus.radius**2)).toFixed(2) + " G";
+                speedOut.innerText = (vel * 20).toFixed(1);
+                
+                let typeDisplay = cam.focus.type.toUpperCase();
+                if (cam.focus.starClass) typeDisplay += ` (${cam.focus.starClass.replace('_', ' ').toUpperCase()})`;
+
+                trackerInfo.innerHTML = `NAME: <span style="color:var(--accent-blue)">${cam.focus.name.toUpperCase()}</span><br>CLASS: ${typeDisplay}<br>MASS: ${cam.focus.mass.toFixed(0)} Yt<br>ORBIT: ${period}<br>GRAVITY: ${gravityValue}<br>TEMP: ${tempValue}`;
+            }
+        }
+
+        // Render Loop
+        function animate(now) {
+            const dt = Math.min(now - lastTime, 32); lastTime = now;
+            ctx.clearRect(0, 0, width, height);
+            const activeTimeStep = isPaused ? 0 : dt;
+
+            // Habitable Zone Rendering (Underneath everything)
+            if (showHZ) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                bodies.forEach(b => {
+                    if (b.type === 'sun') {
+                        let inner = Math.sqrt(b.mass) * 1.5;
+                        let outer = Math.sqrt(b.mass) * 2.5;
+                        if (b.starClass === 'blue_giant') { inner *= 1.5; outer *= 1.5; }
+                        if (b.starClass === 'red_dwarf') { inner *= 0.6; outer *= 0.6; }
+                        if (b.starClass === 'white_dwarf' || b.starClass === 'neutron_star' || b.starClass === 'pulsar') { inner *= 0.3; outer *= 0.3; }
+
+                        const sx = (b.x - cam.x) * cam.zoom + width/2;
+                        const sy = (b.y - cam.y) * cam.zoom + height/2;
+                        
+                        ctx.beginPath(); ctx.arc(sx, sy, outer * cam.zoom, 0, Math.PI*2);
+                        ctx.arc(sx, sy, inner * cam.zoom, 0, Math.PI*2, true);
+                        ctx.fillStyle = 'rgba(57, 255, 20, 0.05)'; ctx.fill();
+                        
+                        ctx.strokeStyle = 'rgba(57, 255, 20, 0.15)'; ctx.setLineDash([5, 5]);
+                        ctx.beginPath(); ctx.arc(sx, sy, inner * cam.zoom, 0, Math.PI*2); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(sx, sy, outer * cam.zoom, 0, Math.PI*2); ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                });
+                ctx.restore();
+            }
+
+            bodies.forEach(b => b.update(activeTimeStep));
+            bodies = bodies.filter(b => !b.toDelete);
+
+            // Solar Wind & Gravity for debris
+            debris.forEach(d => {
+                if (isPaused) return;
+                let forceX = 0, forceY = 0;
+                bodies.forEach(b => {
+                    const distSq = (b.x-d.x)**2 + (b.y-d.y)**2;
+                    if(distSq < 15) return;
+                    
+                    const fGrav = (globalG * b.mass) / distSq;
+                    let fRad = 0;
+                    
+                    // Radiation pressure pushes dust away
+                    if (b.type === 'sun') {
+                        let lumF = b.mass / 12000;
+                        if (b.starClass === 'blue_giant') lumF *= 2.5;
+                        if (b.starClass === 'red_dwarf') lumF *= 0.2;
+                        fRad = (globalG * b.mass * 0.15 * lumF) / distSq;
+                    }
+                    
+                    const netF = fGrav - fRad;
+                    forceX += ((b.x-d.x)/Math.sqrt(distSq)) * netF;
+                    forceY += ((b.y-d.y)/Math.sqrt(distSq)) * netF;
+                });
+                d.vx += forceX * dt * 0.06 * timeScale * timeDirection; 
+                d.vy += forceY * dt * 0.06 * timeScale * timeDirection;
+                d.x += d.vx * dt * 0.06 * timeScale * timeDirection; 
+                d.y += d.vy * dt * 0.06 * timeScale * timeDirection;
+                
+                const sx = (d.x - cam.x)*cam.zoom + width/2; const sy = (d.y - cam.y)*cam.zoom + height/2;
+                if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) {
+                    ctx.fillStyle = "rgba(0, 204, 255, 0.45)"; ctx.fillRect(sx, sy, d.size * cam.zoom, d.size * cam.zoom);
+                }
+            });
+
+            ctx.globalCompositeOperation = 'lighter';
+            for(let i=particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                if (!isPaused) { p.x += p.vx * dt * 0.1 * timeScale * timeDirection; p.y += p.vy * dt * 0.1 * timeScale * timeDirection; p.life -= 0.02 * timeScale; }
+                if(p.life <= 0) { particles.splice(i, 1); continue; }
+                const sx = (p.x - cam.x)*cam.zoom + width/2; const sy = (p.y - cam.y)*cam.zoom + height/2;
+                ctx.fillStyle = p.color || `rgba(255, 120, 0, ${p.life})`;
+                ctx.beginPath(); ctx.arc(sx, sy, 2*cam.zoom, 0, Math.PI*2); ctx.fill();
+            }
+
+            for(let i=explosions.length-1; i>=0; i--) {
+                const ex = explosions[i];
+                if (!isPaused) { ex.r += (ex.maxR - ex.r) * 0.1 * timeScale; ex.life -= 0.03 * timeScale; }
+                if(ex.life <= 0) { explosions.splice(i, 1); continue; }
+                const sx = (ex.x - cam.x)*cam.zoom + width/2; const sy = (ex.y - cam.y)*cam.zoom + height/2;
+                ctx.beginPath(); ctx.arc(sx, sy, ex.r*cam.zoom, 0, Math.PI*2);
+                ctx.strokeStyle = `${ex.color}${Math.floor(ex.life*255).toString(16).padStart(2,'0')}`;
+                ctx.lineWidth = (3 + ex.life * 5) * cam.zoom; ctx.stroke();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+
+            const sorted = [...bodies].sort((a,b) => a.mass - b.mass);
+            sorted.forEach(b => b.draw());
+
+            if (cam.focus) {
+                const sx = (cam.focus.x - cam.x) * cam.zoom + width/2; const sy = (cam.focus.y - cam.y) * cam.zoom + height/2;
+                const r = (cam.focus.radius + 6) * cam.zoom;
+                ctx.strokeStyle = 'rgba(0, 204, 255, 0.7)'; ctx.lineWidth = 1.5;
+                const sw = (now / 450) % (Math.PI * 2);
+                for(let i=0; i<4; i++) {
+                    ctx.beginPath(); ctx.arc(sx, sy, r, sw + i*Math.PI/2, sw + i*Math.PI/2 + 0.4); ctx.stroke();
+                }
+                ctx.fillStyle = 'rgba(0, 204, 255, 0.8)'; ctx.fillRect(sx - 1, sy - 1, 2, 2);
+            }
+
+            if (activePlacementMode) {
+                ctx.strokeStyle = 'rgba(255, 204, 0, 0.4)'; ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.arc(mouseX, mouseY, 25, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(255, 204, 0, 0.8)'; ctx.font = '10px monospace';
+                ctx.fillText(`DEPLOY`, mouseX + 30, mouseY + 4);
+            }
+
+            if (cam.focus) {
+                cam.x += (cam.focus.x - cam.x) * 0.1; cam.y += (cam.focus.y - cam.y) * 0.1;
+                cam.targetZoom = Math.max(1.2, 50 / cam.focus.radius);
+            } else { cam.x *= 0.95; cam.y *= 0.95; }
+            cam.zoom += (cam.targetZoom - cam.zoom) * 0.08;
+
+            updateUI(); requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('wheel', (e) => {
+            cam.targetZoom = Math.max(0.1, Math.min(25, cam.targetZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
+            document.getElementById('zoom-slider').value = cam.targetZoom;
+            document.getElementById('zoom-scale-val').innerText = cam.targetZoom.toFixed(1) + 'x';
+            if (!cam.focus) cam.zoom = cam.targetZoom;
+        });
+
+        canvas.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+        canvas.addEventListener('click', e => {
+            if (activePlacementMode) { handlePlacement(e.clientX, e.clientY); return; }
+            const mx = (e.clientX - width/2) / cam.zoom + cam.x; const my = (e.clientY - height/2) / cam.zoom + cam.y;
+            let found = null; bodies.forEach(b => { if (Math.hypot(b.x - mx, b.y - my) < b.radius + 15) found = b; });
+            cam.focus = found; updateTelemetryButtonState();
+            if(!found) { speedOut.innerText = "000.00"; trackerInfo.innerHTML = "Sensor: GLOBAL VIEW"; }
+        });
+
+        window.addEventListener('resize', resize); resize(); updatePersonaTheme(); loadPreset('solar'); requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
